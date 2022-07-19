@@ -1,6 +1,7 @@
 window: Window_Type;
 width  : s32 = 1920;
 height : s32 = 1080;
+had_focus_last_frame : bool;
 
 colours :: Vector4.[
     .{0.9, 0.1, 0.1, 1}, // 0, shortcut key 1
@@ -45,6 +46,7 @@ main :: ()
 
     while !quit
     {
+        // mouse moves
         if drawing && (Input.mouse_delta_x != 0 || Input.mouse_delta_y != 0) add_point();
 
         Input.update_window_events();
@@ -81,6 +83,7 @@ main :: ()
         draw_one_frame();
         sleep_milliseconds(10);
         reset_temporary_storage();
+        had_focus_last_frame = Input.input_application_has_focus;
     }
 }
 
@@ -122,7 +125,9 @@ add_point :: ()
 
 draw_one_frame :: ()
 {
-    // @TODO: let this update every 100ms or something in case of redraw issues
+    // if we regained focus this frame then consider it dirty and perform a redraw
+    if !had_focus_last_frame && Input.input_application_has_focus then dirty = true;
+
     if !dirty return;
 
     dirty = false;
