@@ -20,6 +20,7 @@ dirty := true;
 drawing := false;
 selected_colour := 9;
 size := 4.0;
+offset : Vector2;
 
 strokes : [..]Stroke;
 
@@ -66,6 +67,13 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "8" then set_colour(7);
             if it.type == .KEYBOARD && it.key_code == #char "9" then set_colour(8);
             if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
+
+            // panning
+            // @TODO: hook this up to key + mouse control
+            if it.type == .KEYBOARD && it.key_code == #char "W" && it.key_pressed then pan(.{0, +10});
+            if it.type == .KEYBOARD && it.key_code == #char "S" && it.key_pressed then pan(.{0, -10});
+            if it.type == .KEYBOARD && it.key_code == #char "A" && it.key_pressed then pan(.{-10, 0});
+            if it.type == .KEYBOARD && it.key_code == #char "D" && it.key_pressed then pan(.{+10, 0});
 
             // size
             if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(0.5);
@@ -127,6 +135,13 @@ set_colour :: (colour : int)
     }
 }
 
+pan :: (delta : Vector2)
+{
+    if delta.x == 0 && delta.y == 0 return;
+    dirty = true;
+    offset += delta;
+}
+
 add_stroke :: ()
 {
     drawing = true;
@@ -147,7 +162,7 @@ add_point :: ()
 {
     dirty = true;
 
-    array_add(*strokes[strokes.count - 1].points, get_cursor_position());
+    array_add(*strokes[strokes.count - 1].points, get_cursor_position() - offset);
 }
 
 draw_one_frame :: ()
@@ -190,8 +205,8 @@ draw_one_frame :: ()
             // Draw the line connecting the 2 points using the rotated
             // vector to give the line weight based on the size
             Simp.immediate_quad(
-                p0 - size_offset, p0 + size_offset,
-                p1 + size_offset, p1 - size_offset,
+                p0 - size_offset + offset, p0 + size_offset + offset,
+                p1 + size_offset + offset, p1 - size_offset + offset,
                 s.colour, s.colour, s.colour, s.colour);
         }
     }
