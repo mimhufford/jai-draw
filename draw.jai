@@ -1,7 +1,7 @@
 window: Window_Type;
 width  : s32 = 1920;
 height : s32 = 1080;
-had_focus_last_frame : bool;
+last_draw : Apollo_Time;
 
 colours :: Vector4.[
     .{0.9, 0.1, 0.1, 1}, // 0, shortcut key 1
@@ -85,7 +85,6 @@ main :: ()
         draw_one_frame();
         sleep_milliseconds(10);
         reset_temporary_storage();
-        had_focus_last_frame = Input.input_application_has_focus;
     }
 }
 
@@ -153,8 +152,13 @@ add_point :: ()
 
 draw_one_frame :: ()
 {
-    // if we regained focus this frame then consider it dirty and perform a redraw
-    if !had_focus_last_frame && Input.input_application_has_focus then dirty = true;
+    // We only draw when the canvas is dirty so the GPU can idle most of the time.
+    // But, because this is a DPI aware application, not rendering every frame means
+    // the alt-tab preview won't show anything, and switching applications comes
+    // back to a blank canvas until the next redraw. Rather than trying to handle
+    // all the specific cases we just force a redraw every 250ms. Enough to feel
+    // responsive but still allows the GPU to idle most of the time.
+    if to_milliseconds(current_time_monotonic() - last_draw) > 250 then dirty = true;
 
     if !dirty return;
 
@@ -193,6 +197,7 @@ draw_one_frame :: ()
     }
 
     Simp.swap_buffers(window);
+    last_draw = current_time_monotonic();
 }
 
 Simp  :: #import "Simp";
