@@ -109,8 +109,11 @@ change_size :: (delta : float)
     dirty = true;
     size += delta;
     if size < 0.5 size = 0.5;
-    s := *strokes[strokes.count - 1];
-    s.size = size;
+    if drawing
+    {
+        s := *strokes[strokes.count - 1];
+        s.size = size;
+    }
 }
 
 set_colour :: (colour : int)
@@ -118,8 +121,11 @@ set_colour :: (colour : int)
     if selected_colour == colour return;
     dirty = true;
     selected_colour = colour;
-    s := *strokes[strokes.count - 1];
-    s.colour = colours[selected_colour];
+    if drawing
+    {
+        s := *strokes[strokes.count - 1];
+        s.colour = colours[selected_colour];
+    }
 }
 
 add_stroke :: ()
