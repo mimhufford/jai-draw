@@ -18,6 +18,7 @@ colours :: Vector4.[
 
 dirty := true;
 drawing := false;
+panning := false;
 selected_colour := 9;
 size := 4.0;
 offset : Vector2;
@@ -47,6 +48,7 @@ main :: ()
     {
         // mouse moves
         if drawing && (Input.mouse_delta_x != 0 || Input.mouse_delta_y != 0) add_point();
+        if panning && (Input.mouse_delta_x != 0 || Input.mouse_delta_y != 0) pan();
 
         Input.update_window_events();
 
@@ -69,11 +71,7 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
 
             // panning
-            // @TODO: hook this up to key + mouse control
-            if it.type == .KEYBOARD && it.key_code == #char "W" && it.key_pressed then pan(.{0, +10});
-            if it.type == .KEYBOARD && it.key_code == #char "S" && it.key_pressed then pan(.{0, -10});
-            if it.type == .KEYBOARD && it.key_code == #char "A" && it.key_pressed then pan(.{-10, 0});
-            if it.type == .KEYBOARD && it.key_code == #char "D" && it.key_pressed then pan(.{+10, 0});
+            if it.type == .KEYBOARD && it.key_code == .SPACEBAR then panning = xx it.key_pressed;
 
             // size
             if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(0.5);
@@ -135,11 +133,11 @@ set_colour :: (colour : int)
     }
 }
 
-pan :: (delta : Vector2)
+pan :: ()
 {
-    if delta.x == 0 && delta.y == 0 return;
     dirty = true;
-    offset += delta;
+    offset.x += Input.mouse_delta_x;
+    offset.y -= Input.mouse_delta_y;
 }
 
 add_stroke :: ()
