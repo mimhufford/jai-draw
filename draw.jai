@@ -67,6 +67,9 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "9" then set_colour(8);
             if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
 
+            // undo
+            if it.type == .KEYBOARD && it.key_code == #char "Z" && it.key_pressed then undo();
+
             // drawing
             if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT
             {
@@ -79,6 +82,14 @@ main :: ()
         sleep_milliseconds(10);
         reset_temporary_storage();
     }
+}
+
+undo :: ()
+{
+    if drawing return;
+    if strokes.count < 2 return;
+    dirty = true;
+    array_ordered_remove_by_index(*strokes, strokes.count - 2);
 }
 
 set_colour :: (colour : int)
