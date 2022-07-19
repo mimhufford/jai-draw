@@ -19,12 +19,13 @@ colours :: Vector4.[
 dirty := true;
 drawing := false;
 selected_colour := 9;
+size := 4.0;
 
 strokes : [..]Stroke;
 
 Stroke :: struct {
-    colour   : Vector4;
-    pressure : float;
+    colour : Vector4;
+    size   : float;
     points : [..]Vector2;
 }
 
@@ -69,6 +70,10 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "9" then set_colour(8);
             if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
 
+            // size
+            if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(-1);
+            if it.type == .KEYBOARD && it.key_code == #char "]" && it.key_pressed then change_size(+1);
+
             // undo
             if it.type == .KEYBOARD && it.key_code == #char "Z" && it.key_pressed then undo();
 
@@ -96,6 +101,12 @@ undo :: ()
     array_ordered_remove_by_index(*strokes, strokes.count - 2);
 }
 
+change_size :: (delta : float)
+{
+    size += delta;
+    if size < 1 size = 1;
+}
+
 set_colour :: (colour : int)
 {
     if selected_colour == colour return;
@@ -119,7 +130,7 @@ add_point :: ()
     {
         s : Stroke;
         s.colour = colours[selected_colour];
-        s.pressure = random_get_within_range(1, 5);
+        s.size = size;
         array_add(*strokes, s);
     }
 }
@@ -153,14 +164,14 @@ draw_one_frame :: ()
             // cause breaks in the line when drawing a curve but it'll do for now.
             p01 := make_vector2(p0.x - p1.x, p0.y - p1.y);
             p01_normalised := p01 / length(p01);
-            p01_scaled_to_pressure := p01_normalised * s.pressure;
-            pressure_offset := make_vector2(-p01_scaled_to_pressure.y, p01_scaled_to_pressure.x);
+            p01_scaled_to_size := p01_normalised * s.size;
+            size_offset := make_vector2(-p01_scaled_to_size.y, p01_scaled_to_size.x);
 
             // Draw the line connecting the 2 points using the rotated
-            // vector to give the line weight based on the pressure
+            // vector to give the line weight based on the size
             Simp.immediate_quad(
-                p0 - pressure_offset, p0 + pressure_offset,
-                p1 + pressure_offset, p1 - pressure_offset,
+                p0 - size_offset, p0 + size_offset,
+                p1 + size_offset, p1 - size_offset,
                 s.colour, s.colour, s.colour, s.colour);
         }
     }
