@@ -127,7 +127,7 @@ draw_one_frame :: ()
 
     dirty = false;
 
-    Simp.clear_render_target(.15, .08, .08, 1);
+    Simp.clear_render_target(.08, .08, .08, 1);
     
     Simp.set_shader_for_color();
 
@@ -137,15 +137,25 @@ draw_one_frame :: ()
         {
             i0 := i1 - 1;
 
-            // @TODO: need to calculate the angle for the line properly
-            pp0 := s.points[i0];
-            pp1 := s.points[i1];
+            p0 := s.points[i0];
+            p1 := s.points[i1];
 
-            p0 := make_vector2(pp0.x - s.pressure, pp0.y + s.pressure);
-            p1 := make_vector2(pp0.x + s.pressure, pp0.y - s.pressure);
-            p2 := make_vector2(pp1.x + s.pressure, pp1.y - s.pressure);
-            p3 := make_vector2(pp1.x - s.pressure, pp1.y + s.pressure);
-            Simp.immediate_quad(p0, p1, p2, p3, s.colour, s.colour, s.colour, s.colour);
+            // @TODO: This should get switched to a specific shader at some point.
+
+            // Calculate a vector between the 2 points currently being looked at so
+            // the quad can be drawn with the correct angle between them. This will
+            // cause breaks in the line when drawing a curve but it'll do for now.
+            p01 := make_vector2(p0.x - p1.x, p0.y - p1.y);
+            p01_normalised := p01 / length(p01);
+            p01_scaled_to_pressure := p01_normalised * s.pressure;
+            pressure_offset := make_vector2(-p01_scaled_to_pressure.y, p01_scaled_to_pressure.x);
+
+            // Draw the line connecting the 2 points using the rotated
+            // vector to give the line weight based on the pressure
+            Simp.immediate_quad(
+                p0 - pressure_offset, p0 + pressure_offset,
+                p1 + pressure_offset, p1 - pressure_offset,
+                s.colour, s.colour, s.colour, s.colour);
         }
     }
 
@@ -159,12 +169,12 @@ Input :: #import "Input";
 #import "Math";
 #import "Random";
 
-// #run {
-//     #if OS == .WINDOWS {
-//         #import "Windows_Resources";
-//         disable_runtime_console();
-//     }
-// }
+#run {
+    #if OS == .WINDOWS {
+        #import "Windows_Resources";
+        disable_runtime_console();
+    }
+}
 
 get_cursor_position :: () -> Vector2
 {
