@@ -74,6 +74,9 @@ main :: ()
             // undo
             if it.type == .KEYBOARD && it.key_code == #char "Z" && it.key_pressed then undo();
 
+            // clear canvas
+            if it.type == .KEYBOARD && it.key_code == #char "N" && it.key_pressed then clear();
+
             // drawing
             if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT &&  it.key_pressed then add_stroke();
             if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT && !it.key_pressed then end_stroke();
@@ -86,13 +89,19 @@ main :: ()
     }
 }
 
-undo :: ()
+undo :: () -> bool
 {
-    if drawing return;
-    if strokes.count < 1 return;
+    if drawing return false;
+    if strokes.count < 1 return false;
     dirty = true;
     array_reset(*strokes[strokes.count - 1].points);
     array_ordered_remove_by_index(*strokes, strokes.count - 1);
+    return true;
+}
+
+clear :: ()
+{
+    while undo() {}
 }
 
 change_size :: (delta : float)
