@@ -2,8 +2,22 @@ window: Window_Type;
 width  : s32 = 1920;
 height : s32 = 1080;
 
+colours :: Vector4.[
+    .{0.9, 0.1, 0.1, 1}, // 0, shortcut key 1
+    .{0.1, 0.9, 0.1, 1}, // 1, shortcut key 2
+    .{0.1, 0.1, 0.9, 1}, // 2, shortcut key 3
+    .{0.9, 1.0, 0.1, 1}, // 3, shortcut key 4
+    .{1.0, 0.4, 0.0, 1}, // 4, shortcut key 5
+    .{0.2, 0.9, 0.6, 1}, // 5, shortcut key 6
+    .{0.9, 0.1, 0.9, 1}, // 6, shortcut key 7
+    .{0.1, 0.9, 0.9, 1}, // 7, shortcut key 8
+    .{1.0, 0.0, 0.5, 1}, // 8, shortcut key 9
+    .{1.0, 1.0, 0.8, 1}, // 9, shortcut key 0
+];
+
 dirty := true;
 drawing := false;
+selected_colour := 9;
 
 strokes : [..]Stroke;
 
@@ -37,9 +51,23 @@ main :: ()
 
         for Input.events_this_frame
         {
+            // quitting
             if it.type == .QUIT                                then  quit = true;
             if it.type == .KEYBOARD && it.key_code == .ESCAPE  then  quit = true;
 
+            // colour selection
+            if it.type == .KEYBOARD && it.key_code == #char "1" then set_colour(0);
+            if it.type == .KEYBOARD && it.key_code == #char "2" then set_colour(1);
+            if it.type == .KEYBOARD && it.key_code == #char "3" then set_colour(2);
+            if it.type == .KEYBOARD && it.key_code == #char "4" then set_colour(3);
+            if it.type == .KEYBOARD && it.key_code == #char "5" then set_colour(4);
+            if it.type == .KEYBOARD && it.key_code == #char "6" then set_colour(5);
+            if it.type == .KEYBOARD && it.key_code == #char "7" then set_colour(6);
+            if it.type == .KEYBOARD && it.key_code == #char "8" then set_colour(7);
+            if it.type == .KEYBOARD && it.key_code == #char "9" then set_colour(8);
+            if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
+
+            // drawing
             if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT
             {
                 drawing = xx it.key_pressed;
@@ -53,17 +81,29 @@ main :: ()
     }
 }
 
+set_colour :: (colour : int)
+{
+    if selected_colour == colour return;
+    dirty = true;
+    selected_colour = colour;
+    s := *strokes[strokes.count - 1];
+    s.colour = colours[selected_colour];
+}
+
 add_point :: ()
 {
     dirty = true;
 
-    if drawing {
+    if drawing
+    {
         s := *strokes[strokes.count - 1];
         p := get_cursor_position();
         array_add(*s.points, p);
-    } else {
+    }
+    else
+    {
         s : Stroke;
-        s.colour = make_vector4(1, random_get_zero_to_one(), random_get_zero_to_one(), 1);
+        s.colour = colours[selected_colour];
         s.pressure = random_get_within_range(1, 5);
         array_add(*strokes, s);
     }
@@ -80,8 +120,10 @@ draw_one_frame :: ()
     
     Simp.set_shader_for_color();
 
-    for s: strokes {
-        for i1: 1..s.points.count-1 {
+    for s: strokes
+    {
+        for i1: 1..s.points.count-1
+        {
             i0 := i1 - 1;
 
             // @TODO: need to calculate the angle for the line properly
