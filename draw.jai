@@ -171,7 +171,7 @@ draw_one_frame :: ()
 Simp  :: #import "Simp";
 Input :: #import "Input";
 #import "Window_Creation";
-#import "Basic"()(MEMORY_DEBUGGER=true);
+#import "Basic";
 #import "Math";
 #import "Random";
 
