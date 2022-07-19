@@ -36,12 +36,12 @@ main :: ()
     do_os_specific_initialisation();
 
     window = create_window(width, height, "Sketches");
-    
+
     // Actual render size in pixels can be different from the window dimensions we specified above (for example on high-resolution displays on macOS/iOS).
     width, height = Simp.get_render_dimensions(window);
 
     Simp.set_render_target(window);
-    
+
     quit := false;
 
     while !quit
@@ -92,6 +92,7 @@ undo :: ()
     if drawing return;
     if strokes.count < 2 return;
     dirty = true;
+    array_reset(*strokes[strokes.count - 2].points);
     array_ordered_remove_by_index(*strokes, strokes.count - 2);
 }
 
@@ -133,7 +134,7 @@ draw_one_frame :: ()
     dirty = false;
 
     Simp.clear_render_target(.08, .08, .08, 1);
-    
+
     Simp.set_shader_for_color();
 
     for s: strokes
