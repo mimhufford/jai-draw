@@ -19,7 +19,7 @@ colours :: Vector4.[
 dirty := true;
 drawing := false;
 selected_colour := 9;
-size := 4.5;
+size := 4.0;
 
 strokes : [..]Stroke;
 
@@ -68,8 +68,8 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
 
             // size
-            if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(-1);
-            if it.type == .KEYBOARD && it.key_code == #char "]" && it.key_pressed then change_size(+1);
+            if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(0.5);
+            if it.type == .KEYBOARD && it.key_code == #char "]" && it.key_pressed then change_size(2);
 
             // undo
             if it.type == .KEYBOARD && it.key_code == #char "Z" && it.key_pressed then undo();
@@ -104,10 +104,10 @@ clear :: ()
     while undo() {}
 }
 
-change_size :: (delta : float)
+change_size :: (multiplier : float)
 {
     dirty = true;
-    size += delta;
+    size *= multiplier;
     if size < 0.5 size = 0.5;
     if drawing
     {
