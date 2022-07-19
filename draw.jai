@@ -19,7 +19,7 @@ colours :: Vector4.[
 dirty := true;
 drawing := false;
 selected_colour := 9;
-size := 4.0;
+size := 4.5;
 
 strokes : [..]Stroke;
 
@@ -103,8 +103,11 @@ undo :: ()
 
 change_size :: (delta : float)
 {
+    dirty = true;
     size += delta;
-    if size < 1 size = 1;
+    if size < 0.5 size = 0.5;
+    s := *strokes[strokes.count - 1];
+    s.size = size;
 }
 
 set_colour :: (colour : int)
