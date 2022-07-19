@@ -31,9 +31,6 @@ Stroke :: struct {
 
 main :: ()
 {
-    // Doing this adds the first Stroke to the strokes collection so that we're ready to go
-    add_point();
-
     do_os_specific_initialisation();
 
     window = create_window(width, height, "Sketches");
@@ -78,11 +75,8 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "Z" && it.key_pressed then undo();
 
             // drawing
-            if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT
-            {
-                drawing = xx it.key_pressed;
-                add_point();
-            }
+            if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT &&  it.key_pressed then add_stroke();
+            if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT && !it.key_pressed then end_stroke();
         }
 
         draw_one_frame();
@@ -95,10 +89,10 @@ main :: ()
 undo :: ()
 {
     if drawing return;
-    if strokes.count < 2 return;
+    if strokes.count < 1 return;
     dirty = true;
-    array_reset(*strokes[strokes.count - 2].points);
-    array_ordered_remove_by_index(*strokes, strokes.count - 2);
+    array_reset(*strokes[strokes.count - 1].points);
+    array_ordered_remove_by_index(*strokes, strokes.count - 1);
 }
 
 change_size :: (delta : float)
@@ -119,23 +113,27 @@ set_colour :: (colour : int)
     s.colour = colours[selected_colour];
 }
 
+add_stroke :: ()
+{
+    drawing = true;
+
+    s := array_add(*strokes);
+    s.colour = colours[selected_colour];
+    s.size = size;
+
+    add_point();
+}
+
+end_stroke :: ()
+{
+    drawing = false;
+}
+
 add_point :: ()
 {
     dirty = true;
 
-    if drawing
-    {
-        s := *strokes[strokes.count - 1];
-        p := get_cursor_position();
-        array_add(*s.points, p);
-    }
-    else
-    {
-        s : Stroke;
-        s.colour = colours[selected_colour];
-        s.size = size;
-        array_add(*strokes, s);
-    }
+    array_add(*strokes[strokes.count - 1].points, get_cursor_position());
 }
 
 draw_one_frame :: ()
