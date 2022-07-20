@@ -188,28 +188,38 @@ draw_one_frame :: ()
 
     for s: strokes
     {
-        for i1: 1..s.points.count-1
+        for i: 2..s.points.count-1
         {
-            i0 := i1 - 1;
+            // We consider three points at a time so that the vertices
+            // for quads representing the lines can be calculated without
+            // leaving missing triangles when the line changes direction
 
-            p0 := s.points[i0];
-            p1 := s.points[i1];
+            p0 := s.points[i-2];
+            p1 := s.points[i-1];
+            p2 := s.points[i-0];
 
-            // @TODO: This should get switched to a specific shader at some point.
-
-            // Calculate a vector between the 2 points currently being looked at so
-            // the quad can be drawn with the correct angle between them. This will
-            // cause breaks in the line when drawing a curve but it'll do for now.
+            // Calculate the offset vector for points 0 and 1
             p01 := make_vector2(p0.x - p1.x, p0.y - p1.y);
             p01_normalised := p01 / length(p01);
             p01_scaled_to_size := p01_normalised * s.size;
-            size_offset := make_vector2(-p01_scaled_to_size.y, p01_scaled_to_size.x);
+            p01_offset := make_vector2(-p01_scaled_to_size.y, p01_scaled_to_size.x);
 
-            // Draw the line connecting the 2 points using the rotated
-            // vector to give the line weight based on the size
+            // Calculate the offset vector for points 1 and 2
+            p12 := make_vector2(p1.x - p2.x, p1.y - p2.y);
+            p12_normalised := p12 / length(p12);
+            p12_scaled_to_size := p12_normalised * s.size;
+            p12_offset := make_vector2(-p12_scaled_to_size.y, p12_scaled_to_size.x);
+
+            // Draw the quad representing the line from p0 to p1
             Simp.immediate_quad(
-                p0 - size_offset + offset, p0 + size_offset + offset,
-                p1 + size_offset + offset, p1 - size_offset + offset,
+                p0 - p01_offset + offset, p0 + p01_offset + offset,
+                p1 + p01_offset + offset, p1 - p01_offset + offset,
+                s.colour, s.colour, s.colour, s.colour);
+
+            // Draw the quad which patches the potentially missing triangles around p1
+            Simp.immediate_quad(
+                p1 - p12_offset + offset, p1 + p01_offset + offset,
+                p1 + p12_offset + offset, p1 - p01_offset + offset,
                 s.colour, s.colour, s.colour, s.colour);
         }
     }
