@@ -47,7 +47,7 @@ main :: ()
     while !quit
     {
         // mouse moves
-        if drawing && (Input.mouse_delta_x != 0 || Input.mouse_delta_y != 0) add_point();
+        if drawing add_point();
         if panning && (Input.mouse_delta_x != 0 || Input.mouse_delta_y != 0) pan();
 
         Input.update_window_events();
@@ -158,9 +158,14 @@ end_stroke :: ()
 
 add_point :: ()
 {
-    dirty = true;
+    points := *strokes[strokes.count - 1].points;
+    position := get_cursor_position() - offset;
 
-    array_add(*strokes[strokes.count - 1].points, get_cursor_position() - offset);
+    // if the brush hasn't moved since the last point was added then don't add a point
+    if points.count && (<<points)[points.count-1] == position return;
+
+    array_add(points, position);
+    dirty = true;
 }
 
 draw_one_frame :: ()
