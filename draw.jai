@@ -48,7 +48,7 @@ main :: ()
 
     while !quit
     {
-        is_down :: (k : Input.Key_Code) -> bool { return Input.input_button_states[k] == .DOWN; }
+        is_down :: (k: Input.Key_Code) -> bool { return Input.input_button_states[k] & .DOWN != 0; }
 
         Input.update_window_events();
 
