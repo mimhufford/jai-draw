@@ -86,10 +86,10 @@ main :: ()
             if went_down(#char "]") change_size(2);
 
             // undo
-            if went_down(#char "Z") undo();
+            if is_down(.CTRL) && went_down(#char "Z") undo();
 
             // clear canvas
-            if went_down(#char "N") clear();
+            if is_down(.CTRL) && went_down(#char "N") clear();
 
             // drawing
             if went_down(.MOUSE_BUTTON_LEFT) add_stroke();
