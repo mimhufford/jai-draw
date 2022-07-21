@@ -188,44 +188,63 @@ draw_one_frame :: ()
 
     for s: strokes
     {
-        for i: 2..s.points.count-1
+        for i: 1..s.points.count-1
         {
-            // We consider three points at a time so that the vertices
-            // for quads representing the lines can be calculated without
-            // leaving missing triangles when the line changes direction
+            // Consider 2 points at a time so we can draw the line between them
+            p0 := s.points[i-1] + offset;
+            p1 := s.points[i-0] + offset;
 
-            p0 := s.points[i-2];
-            p1 := s.points[i-1];
-            p2 := s.points[i-0];
+            // Always draw the circle for the 2nd point
+            draw_circle(p1, s.size, s.colour);
 
-            // Calculate the offset vector for points 0 and 1
+            // If we're on the first line also draw the circle for the 1st point
+            if i == 1 draw_circle(p0, s.size, s.colour);
+
+            // Calculate the offset vector for the line thickness
             p01 := make_vector2(p0.x - p1.x, p0.y - p1.y);
-            p01_normalised := p01 / length(p01);
-            p01_scaled_to_size := p01_normalised * s.size;
+            p01_scaled_to_size := p01 / length(p01) * s.size;
             p01_offset := make_vector2(-p01_scaled_to_size.y, p01_scaled_to_size.x);
 
-            // Calculate the offset vector for points 1 and 2
-            p12 := make_vector2(p1.x - p2.x, p1.y - p2.y);
-            p12_normalised := p12 / length(p12);
-            p12_scaled_to_size := p12_normalised * s.size;
-            p12_offset := make_vector2(-p12_scaled_to_size.y, p12_scaled_to_size.x);
-
-            // Draw the quad representing the line from p0 to p1
+            // Draw the quad representing the line
             Simp.immediate_quad(
-                p0 - p01_offset + offset, p0 + p01_offset + offset,
-                p1 + p01_offset + offset, p1 - p01_offset + offset,
-                s.colour, s.colour, s.colour, s.colour);
-
-            // Draw the quad which patches the potentially missing triangles around p1
-            Simp.immediate_quad(
-                p1 - p12_offset + offset, p1 + p01_offset + offset,
-                p1 + p12_offset + offset, p1 - p01_offset + offset,
+                p0 - p01_offset, p0 + p01_offset,
+                p1 + p01_offset, p1 - p01_offset,
                 s.colour, s.colour, s.colour, s.colour);
         }
     }
 
     Simp.swap_buffers(window);
     last_draw = current_time_monotonic();
+}
+
+draw_circle :: (p: Vector2, r: float, c: Vector4)
+{
+    segments :: 24;
+    step :: 2 * 3.14159 / segments;
+
+    #insert #run -> string
+    {
+        s: String_Builder;
+        
+        print_to_builder(*s, "sin_lut :: float.[");
+        for 0..segments print_to_builder(*s, "%,", sin(cast(float)it * step));
+        print_to_builder(*s, "];");
+
+        print_to_builder(*s, "cos_lut :: float.[");
+        for 0..segments print_to_builder(*s, "%,", cos(cast(float)it * step));
+        print_to_builder(*s, "];");
+
+        return builder_to_string(*s);
+    };
+
+    p3 := make_vector3(p.x, p.y, 0);
+
+    for i: 0..segments-1
+    {
+        r1 := make_vector3(p.x + sin_lut[i+0] * r, p.y + cos_lut[i+0] * r, 0);
+        r2 := make_vector3(p.x + sin_lut[i+1] * r, p.y + cos_lut[i+1] * r, 0);
+        Simp.immediate_triangle(p3, r1, r2, c, c, c);
+    }
 }
 
 Simp  :: #import "Simp";
