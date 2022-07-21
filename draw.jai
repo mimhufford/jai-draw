@@ -206,17 +206,17 @@ draw_one_frame :: ()
 
     for s: strokes
     {
+        // Draw the circle for the 1st point immediately
+        draw_circle(s.points[0] + offset, s.size, s.colour);
+
         for i: 1..s.points.count-1
         {
             // Consider 2 points at a time so we can draw the line between them
             p0 := s.points[i-1] + offset;
             p1 := s.points[i-0] + offset;
 
-            // Always draw the circle for the 2nd point
+            // Draw the circle for the 2nd point
             draw_circle(p1, s.size, s.colour);
-
-            // If we're on the first line also draw the circle for the 1st point
-            if i == 1 draw_circle(p0, s.size, s.colour);
 
             // Calculate the offset vector for the line thickness
             p01 := make_vector2(p0.x - p1.x, p0.y - p1.y);
