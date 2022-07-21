@@ -19,6 +19,8 @@ colours :: Vector4.[
 dirty := true;
 drawing := false;
 panning := false;
+pan_start : Vector2;
+offset_start : Vector2;
 selected_colour := 9;
 size := 4.0;
 offset : Vector2;
@@ -46,11 +48,13 @@ main :: ()
 
     while !quit
     {
-        // mouse moves
-        if drawing add_point();
-        if panning && (Input.mouse_delta_x != 0 || Input.mouse_delta_y != 0) pan();
+        is_down :: (k : Input.Key_Code) -> bool { return Input.input_button_states[k] == .DOWN; }
 
         Input.update_window_events();
+
+        // mouse moves
+        if drawing add_point();
+        if panning && is_down(.MOUSE_BUTTON_LEFT) then pan();
 
         for Input.events_this_frame
         {
@@ -71,7 +75,8 @@ main :: ()
             if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
 
             // panning
-            if it.type == .KEYBOARD && it.key_code == .SPACEBAR then panning = xx it.key_pressed;
+            if it.type == .KEYBOARD && it.key_code == .CTRL &&  it.key_pressed then start_pan();
+            if it.type == .KEYBOARD && it.key_code == .CTRL && !it.key_pressed then end_pan();
 
             // size
             if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(0.5);
@@ -133,15 +138,28 @@ set_colour :: (colour : int)
     }
 }
 
+start_pan :: ()
+{
+    panning = true;
+    pan_start = get_cursor_position();
+    offset_start = offset;
+}
+
+end_pan :: ()
+{
+    panning = false;
+}
+
 pan :: ()
 {
     dirty = true;
-    offset.x += Input.mouse_delta_x;
-    offset.y -= Input.mouse_delta_y;
+    offset = offset_start + get_cursor_position() - pan_start;
 }
 
 add_stroke :: ()
 {
+    if panning return;
+
     drawing = true;
 
     s := array_add(*strokes);
