@@ -54,43 +54,46 @@ main :: ()
 
         // mouse moves
         if drawing add_point();
-        if panning && is_down(.MOUSE_BUTTON_LEFT) then pan();
+        if panning && is_down(.MOUSE_BUTTON_LEFT) pan();
 
         for Input.events_this_frame
         {
+            went_down :: (k: Input.Key_Code) -> bool #expand { return it.type == .KEYBOARD && it.key_code == k && it.key_pressed && !it.repeat; }
+            went_up   :: (k: Input.Key_Code) -> bool #expand { return it.type == .KEYBOARD && it.key_code == k && !it.key_pressed; }
+
             // quitting
-            if it.type == .QUIT                                then  quit = true;
-            if it.type == .KEYBOARD && it.key_code == .ESCAPE  then  quit = true;
+            if it.type == .QUIT   quit = true;
+            if went_down(.ESCAPE) quit = true;
 
             // colour selection
-            if it.type == .KEYBOARD && it.key_code == #char "1" then set_colour(0);
-            if it.type == .KEYBOARD && it.key_code == #char "2" then set_colour(1);
-            if it.type == .KEYBOARD && it.key_code == #char "3" then set_colour(2);
-            if it.type == .KEYBOARD && it.key_code == #char "4" then set_colour(3);
-            if it.type == .KEYBOARD && it.key_code == #char "5" then set_colour(4);
-            if it.type == .KEYBOARD && it.key_code == #char "6" then set_colour(5);
-            if it.type == .KEYBOARD && it.key_code == #char "7" then set_colour(6);
-            if it.type == .KEYBOARD && it.key_code == #char "8" then set_colour(7);
-            if it.type == .KEYBOARD && it.key_code == #char "9" then set_colour(8);
-            if it.type == .KEYBOARD && it.key_code == #char "0" then set_colour(9);
+            if went_down(#char "1") set_colour(0);
+            if went_down(#char "2") set_colour(1);
+            if went_down(#char "3") set_colour(2);
+            if went_down(#char "4") set_colour(3);
+            if went_down(#char "5") set_colour(4);
+            if went_down(#char "6") set_colour(5);
+            if went_down(#char "7") set_colour(6);
+            if went_down(#char "8") set_colour(7);
+            if went_down(#char "9") set_colour(8);
+            if went_down(#char "0") set_colour(9);
 
             // panning
-            if it.type == .KEYBOARD && it.key_code == .CTRL &&  it.key_pressed then start_pan();
-            if it.type == .KEYBOARD && it.key_code == .CTRL && !it.key_pressed then end_pan();
+            if is_down(.CTRL) && went_down(.MOUSE_BUTTON_LEFT) start_pan();
+            if went_up(.MOUSE_BUTTON_LEFT)                     end_pan();
 
             // size
-            if it.type == .KEYBOARD && it.key_code == #char "[" && it.key_pressed then change_size(0.5);
-            if it.type == .KEYBOARD && it.key_code == #char "]" && it.key_pressed then change_size(2);
+            if went_down(#char "[") change_size(0.5);
+            if went_down(#char "]") change_size(2);
 
             // undo
-            if it.type == .KEYBOARD && it.key_code == #char "Z" && it.key_pressed then undo();
+            if went_down(#char "Z") undo();
 
             // clear canvas
-            if it.type == .KEYBOARD && it.key_code == #char "N" && it.key_pressed then clear();
+            if went_down(#char "N") clear();
 
             // drawing
-            if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT &&  it.key_pressed then add_stroke();
-            if it.type == .KEYBOARD && it.key_code == .MOUSE_BUTTON_LEFT && !it.key_pressed then end_stroke();
+            if went_down(.MOUSE_BUTTON_LEFT) add_stroke();
+            if went_up  (.MOUSE_BUTTON_LEFT) end_stroke();
         }
 
         draw_one_frame();
