@@ -1,6 +1,6 @@
 main :: ()
 {
-    create_window(800, 600, "Draw");
+    create_window(1920, 1080, "Draw");
 
     init_pen();
 
@@ -69,7 +69,7 @@ main :: ()
 // Rendering
 //
 
-draw_circle :: (p: Point, c: Vector4)
+draw_circle :: (p: Point, c: Vector3)
 {
     for y: cast(s32)(p.y-p.r)..cast(s32)(p.y+p.r)
     {
@@ -83,7 +83,7 @@ draw_circle :: (p: Point, c: Vector4)
     }
 }
 
-fill :: (x: s32, y: s32, c: Vector4)
+fill :: (x: s32, y: s32, c: Vector3)
 {
     if x < 0 return;
     if y < 0 return;
@@ -93,7 +93,6 @@ fill :: (x: s32, y: s32, c: Vector4)
     window.bitmap[index + 0] = xx (c.z * 255);
     window.bitmap[index + 1] = xx (c.y * 255);
     window.bitmap[index + 2] = xx (c.x * 255);
-    window.bitmap[index + 3] = xx (c.w * 255);
 }
 
 draw :: ()
@@ -148,7 +147,7 @@ colour := colours[9];
 strokes : [..]Stroke;
 
 Stroke :: struct {
-    colour : Vector4;
+    colour : Vector3;
     points : [..]Point;
     alive := true;
 }
@@ -182,18 +181,18 @@ Key :: struct {
     went_down : bool;
 }
 
-colours :: Vector4.[
-    .{0.9, 0.1, 0.1, 1}, //  0, shortcut key 1
-    .{0.1, 0.9, 0.1, 1}, //  1, shortcut key 2
-    .{0.1, 0.1, 0.9, 1}, //  2, shortcut key 3
-    .{0.9, 1.0, 0.1, 1}, //  3, shortcut key 4
-    .{1.0, 0.4, 0.0, 1}, //  4, shortcut key 5
-    .{0.2, 0.9, 0.6, 1}, //  5, shortcut key 6
-    .{0.9, 0.1, 0.9, 1}, //  6, shortcut key 7
-    .{0.1, 0.9, 0.9, 1}, //  7, shortcut key 8
-    .{1.0, 0.0, 0.5, 1}, //  8, shortcut key 9
-    .{1.0, 1.0, 0.8, 1}, //  9, shortcut key 0
-    .{.08, .08, .08, 1}, // 10, shortcut key E
+colours :: Vector3.[
+    .{0.9, 0.1, 0.1}, //  0, shortcut key 1
+    .{0.1, 0.9, 0.1}, //  1, shortcut key 2
+    .{0.1, 0.1, 0.9}, //  2, shortcut key 3
+    .{0.9, 1.0, 0.1}, //  3, shortcut key 4
+    .{1.0, 0.4, 0.0}, //  4, shortcut key 5
+    .{0.2, 0.9, 0.6}, //  5, shortcut key 6
+    .{0.9, 0.1, 0.9}, //  6, shortcut key 7
+    .{0.1, 0.9, 0.9}, //  7, shortcut key 8
+    .{1.0, 0.0, 0.5}, //  8, shortcut key 9
+    .{1.0, 1.0, 0.8}, //  9, shortcut key 0
+    .{.08, .08, .08}, // 10, shortcut key E
 ];
 
 //
@@ -217,15 +216,12 @@ create_window :: (width: s32, height: s32, title: string)
     RegisterClassExW(*wc);
 
     window.handle = CreateWindowExW(0, 
-                            utf8_to_wide(title),
-                            utf8_to_wide(title),
-                            WS_OVERLAPPEDWINDOW,
-                            CW_USEDEFAULT, CW_USEDEFAULT,
-                            window.width, window.height,
-                            null,
-                            null,
-                            null,
-                            null);
+                        utf8_to_wide(title),
+                        utf8_to_wide(title),
+                        WS_VISIBLE | WS_POPUP,
+                        CW_USEDEFAULT, CW_USEDEFAULT,
+                        window.width, window.height,
+                        null, null, null, null);
 
     ShowWindow(window.handle, SW_SHOW);
 
