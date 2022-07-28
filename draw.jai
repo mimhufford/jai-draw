@@ -2,7 +2,7 @@ main :: ()
 {
     window.width = 800;
     window.height = 800;
-    window.handle = create_window(window.width, window.height, "Draw", background_color_rgb = .[.08,.08,.08]);
+    window.handle = create_window(window.width, window.height, "Draw");
     array_resize(*window.bitmap, window.width * window.height * 4);
 
     init_pen();
@@ -45,35 +45,39 @@ main :: ()
 
         if window.dirty
         {
-            window.dirty = false;
+            memset(window.bitmap.data, 17, window.bitmap.count);
 
             for s: strokes
             {
                 for p: s.points
                 {
-                    fill :: (x: s32, y: s32)
+                    fill :: (x: s32, y: s32, c: Vector4)
                     {
                         if x < 0 return;
                         if y < 0 return;
                         if x >= window.width return;
                         if y >= window.height return;
                         index := (y * window.height + x) * 4;
-                        window.bitmap[index + 0] = 255;
-                        window.bitmap[index + 1] = 255;
-                        window.bitmap[index + 2] = 255;
-                        window.bitmap[index + 3] = 255;
+                        window.bitmap[index + 0] = xx (c.z * 255);
+                        window.bitmap[index + 1] = xx (c.y * 255);
+                        window.bitmap[index + 2] = xx (c.x * 255);
+                        window.bitmap[index + 3] = xx (c.w * 255);
                     }
 
                     for y: p.y-p.r .. p.y+p.r
                     {
                         for x: p.x-p.r .. p.x+p.r
                         {
-                            fill(x, y);
+                            if (x-p.x)*(x-p.x) + (y-p.y)*(y-p.y) < p.r*p.r
+                            {
+                                fill(x, y, s.colour);
+                            }
                         }
                     }
                 }
             }
 
+            window.dirty = false;
             draw();
         }
 
