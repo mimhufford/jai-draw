@@ -1,9 +1,6 @@
 main :: ()
 {
-    window.width = 800;
-    window.height = 800;
-    window.handle = create_window(window.width, window.height, "Draw");
-    array_resize(*window.bitmap, window.width * window.height * 4);
+    create_window(800, 600, "Draw");
 
     init_pen();
 
@@ -203,6 +200,38 @@ colours :: Vector4.[
 // Win32 window message & input related
 //
 
+create_window :: (width: s32, height: s32, title: string)
+{
+    window.width = width;
+    window.height = height;
+    array_resize(*window.bitmap, window.width * window.height * 4);
+
+    wc: WNDCLASSEXW;
+    wc.lpszClassName = utf8_to_wide(title);
+    wc.lpfnWndProc   = xx window_proc;
+    wc.hInstance     = GetModuleHandleW(null);
+    wc.cbSize        = size_of(WNDCLASSEXW);
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
+    wc.hCursor       = LoadCursorW(null, IDC_ARROW);
+
+    RegisterClassExW(*wc);
+
+    window.handle = CreateWindowExW(0, 
+                            utf8_to_wide(title),
+                            utf8_to_wide(title),
+                            WS_OVERLAPPEDWINDOW,
+                            CW_USEDEFAULT, CW_USEDEFAULT,
+                            window.width, window.height,
+                            null,
+                            null,
+                            null,
+                            null);
+
+    ShowWindow(window.handle, SW_SHOW);
+
+    #import "Windows_Utf8";
+}
+
 process_window_events :: ()
 {
     input.prev_keys = input.keys;
@@ -217,7 +246,7 @@ process_window_events :: ()
     }
 }
 
-#add_context _windows_windowproc :: (handle: HWND, message: u32, wParam: WPARAM, lParam: LPARAM) -> s64 #c_call
+window_proc :: (handle: HWND, message: u32, wParam: WPARAM, lParam: LPARAM) -> s64 #c_call
 {
     ctx: Context;
     ctx.allocator = Context.default_allocator;
@@ -367,4 +396,3 @@ Log_Context :: struct {
 #import "Math";
 #import "Basic";
 #import "Windows";
-#import "Window_Creation";
