@@ -1,10 +1,9 @@
 main :: ()
 {
-    SetProcessDPIAware();
-    timeBeginPeriod(1); // Windows is very bad at thread-switching by default unless you do this
-    window.handle = create_window(1920, 1080, "Draw", background_color_rgb = .[.08,.08,.08]);
-    window.width, window.height = get_render_dimensions(window.handle);
-    set_render_target(window.handle);
+    window.width = 800;
+    window.height = 800;
+    window.handle = create_window(window.width, window.height, "Draw", background_color_rgb = .[.08,.08,.08]);
+    array_resize(*window.bitmap, window.width * window.height * 4);
 
     init_pen();
 
@@ -34,9 +33,9 @@ main :: ()
             s := get_active_stroke();
             s.colour = colour;
             p := array_add(*s.points);
-            p.p.x = xx input.x;
-            p.p.y = xx input.y;
-            p.r = input.pressure * size;
+            p.x = input.x;
+            p.y = input.y;
+            p.r = xx (input.pressure * size);
             window.dirty = true;
         }
         else
@@ -44,7 +43,40 @@ main :: ()
             if strokes then strokes[strokes.count-1].alive = false;
         }
 
-        draw_one_frame();
+        if window.dirty
+        {
+            window.dirty = false;
+
+            for s: strokes
+            {
+                for p: s.points
+                {
+                    fill :: (x: s32, y: s32)
+                    {
+                        if x < 0 return;
+                        if y < 0 return;
+                        if x >= window.width return;
+                        if y >= window.height return;
+                        index := (y * window.height + x) * 4;
+                        window.bitmap[index + 0] = 255;
+                        window.bitmap[index + 1] = 255;
+                        window.bitmap[index + 2] = 255;
+                        window.bitmap[index + 3] = 255;
+                    }
+
+                    for y: p.y-p.r .. p.y+p.r
+                    {
+                        for x: p.x-p.r .. p.x+p.r
+                        {
+                            fill(x, y);
+                        }
+                    }
+                }
+            }
+
+            draw();
+        }
+
         sleep_milliseconds(1);
     }
 }
@@ -53,87 +85,15 @@ main :: ()
 // Rendering
 //
 
-draw_one_frame :: ()
+draw :: ()
 {
-    // We only draw when the canvas is dirty so the GPU can idle most of the time.
-    // But, because this is a DPI aware application, not rendering every frame means
-    // the alt-tab preview won't show anything, and switching applications comes
-    // back to a blank canvas until the next redraw. Rather than trying to handle
-    // all the specific cases we just force a redraw every 250ms. Enough to feel
-    // responsive but still allows the GPU to idle most of the time.
-    if to_milliseconds(current_time_monotonic() - window.last_draw) > 250 then window.dirty = true;
-
-    if !window.dirty return;
-
-    window.dirty = false;
-    window.last_draw = current_time_monotonic();
-
-    clear_render_target(.08, .08, .08, 1);
-    set_shader_for_color();
-
-    for s: strokes
-    {
-        // Draw the circle for the 1st point immediately
-        draw_circle(s.points[0], s.colour);
-
-        for i: 1..s.points.count-1
-        {
-            // Consider 2 points at a time so we can draw the line between them
-            p1 := s.points[i-1];
-            p2 := s.points[i-0];
-
-            // Draw the circle for the 2nd point (the 1st is already drawn)
-            draw_circle(p2, s.colour);
-
-            // Draw the potentially tapered quad between the 2 points
-            draw_line_between_two_points(p1, p2, s.colour);
-        }
-    }
-
-    swap_buffers(window.handle);
-}
-
-draw_line_between_two_points :: (p1: Point, p2: Point, colour: Vector4)
-{
-    // Calculate the offset vector for the line thickness
-    p12 := make_vector2(p1.p.x - p2.p.x, p1.p.y - p2.p.y);
-    p1_scaled_to_size := p12 / length(p12) * p1.r;
-    p1_offset := make_vector2(-p1_scaled_to_size.y, p1_scaled_to_size.x);
-    p2_scaled_to_size := p12 / length(p12) * p2.r;
-    p2_offset := make_vector2(-p2_scaled_to_size.y, p2_scaled_to_size.x);
-
-    // Draw the quad representing the line
-    immediate_quad(
-        p1.p - p1_offset, p1.p + p1_offset,
-        p2.p + p2_offset, p2.p - p2_offset,
-        colour, colour, colour, colour);
-}
-
-draw_circle :: (p: Point, colour: Vector4)
-{
-    segments :: 24;
-    step :: 2 * 3.14159 / segments;
-
-    #insert #run -> string
-    {
-        s: String_Builder;
-        print_to_builder(*s, "sin_lut :: float.[");
-        for 0..segments print_to_builder(*s, "%,", sin(cast(float)it * step));
-        print_to_builder(*s, "];");
-        print_to_builder(*s, "cos_lut :: float.[");
-        for 0..segments print_to_builder(*s, "%,", cos(cast(float)it * step));
-        print_to_builder(*s, "];");
-        return builder_to_string(*s);
-    };
-
-    p3 := make_vector3(p.p.x, p.p.y, 0);
-
-    for i: 0..segments-1
-    {
-        r1 := make_vector3(p.p.x + sin_lut[i+0] * p.r, p.p.y + cos_lut[i+0] * p.r, 0);
-        r2 := make_vector3(p.p.x + sin_lut[i+1] * p.r, p.p.y + cos_lut[i+1] * p.r, 0);
-        immediate_triangle(p3, r1, r2, colour, colour, colour);
-    }
+    bmi : BITMAPINFO;
+    bmi.bmiHeader.biSize = size_of(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = window.width;
+    bmi.bmiHeader.biHeight = window.height;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    StretchDIBits(GetDC(window.handle), 0, 0, window.width, window.height, 0, 0, window.width, window.height, window.bitmap.data, *bmi, 0, 0x00CC0020 /* SRCCOPY */);
 }
 
 //
@@ -183,8 +143,9 @@ Stroke :: struct {
 }
 
 Point :: struct {
-    p : Vector2;
-    r : float;
+    x : s32;
+    y : s32;
+    r : s32;
 }
 
 window : struct {
@@ -194,6 +155,7 @@ window : struct {
     quit      : bool;
     dirty    := true;
     last_draw : Apollo_Time;
+    bitmap    : [..]u8;
 }
 
 input : struct {
@@ -251,6 +213,9 @@ process_window_events :: ()
 
     if message ==
     {
+        case WM_PAINT;
+            draw();
+
         case WM_KEYDOWN; #through;
         case WM_SYSKEYDOWN;
             input.keys[wParam].is_down = true;
@@ -386,7 +351,6 @@ Log_Context :: struct {
 //
 
 #import "Math";
-#import "Simp";
 #import "Basic";
 #import "Windows";
 #import "Window_Creation";
