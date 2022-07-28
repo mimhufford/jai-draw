@@ -33,9 +33,9 @@ main :: ()
             s := get_active_stroke();
             s.colour = colour;
             p := array_add(*s.points);
-            p.x = input.x;
-            p.y = input.y;
-            p.r = xx (input.pressure * size);
+            p.x = xx input.x;
+            p.y = xx input.y;
+            p.r = input.pressure * size;
             window.dirty = true;
         }
         else
@@ -49,31 +49,14 @@ main :: ()
 
             for s: strokes
             {
-                for p: s.points
-                {
-                    fill :: (x: s32, y: s32, c: Vector4)
-                    {
-                        if x < 0 return;
-                        if y < 0 return;
-                        if x >= window.width return;
-                        if y >= window.height return;
-                        index := (y * window.height + x) * 4;
-                        window.bitmap[index + 0] = xx (c.z * 255);
-                        window.bitmap[index + 1] = xx (c.y * 255);
-                        window.bitmap[index + 2] = xx (c.x * 255);
-                        window.bitmap[index + 3] = xx (c.w * 255);
-                    }
+                draw_circle(s.points[0], s.colour);
 
-                    for y: p.y-p.r .. p.y+p.r
-                    {
-                        for x: p.x-p.r .. p.x+p.r
-                        {
-                            if (x-p.x)*(x-p.x) + (y-p.y)*(y-p.y) < p.r*p.r
-                            {
-                                fill(x, y, s.colour);
-                            }
-                        }
-                    }
+                for i: 1..s.points.count-1
+                {
+                    p1 := s.points[i-1];
+                    p2 := s.points[i-0];
+
+                    draw_circle(p2, s.colour);
                 }
             }
 
@@ -88,6 +71,33 @@ main :: ()
 //
 // Rendering
 //
+
+draw_circle :: (p: Point, c: Vector4)
+{
+    for y: cast(s32)(p.y-p.r)..cast(s32)(p.y+p.r)
+    {
+        for x: cast(s32)(p.x-p.r)..cast(s32)(p.x+p.r)
+        {
+            if (x-p.x)*(x-p.x) + (y-p.y)*(y-p.y) < p.r*p.r
+            {
+                fill(x, y, c);
+            }
+        }
+    }
+}
+
+fill :: (x: s32, y: s32, c: Vector4)
+{
+    if x < 0 return;
+    if y < 0 return;
+    if x >= window.width return;
+    if y >= window.height return;
+    index := (y * window.height + x) * 4;
+    window.bitmap[index + 0] = xx (c.z * 255);
+    window.bitmap[index + 1] = xx (c.y * 255);
+    window.bitmap[index + 2] = xx (c.x * 255);
+    window.bitmap[index + 3] = xx (c.w * 255);
+}
 
 draw :: ()
 {
@@ -147,9 +157,9 @@ Stroke :: struct {
 }
 
 Point :: struct {
-    x : s32;
-    y : s32;
-    r : s32;
+    x : float;
+    y : float;
+    r : float;
 }
 
 window : struct {
