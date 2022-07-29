@@ -1,114 +1,56 @@
 main :: ()
 {
-    create_window(1920, 1080, "Draw");
-
-    init_pen();
+    create_window(800, 600, "Draw");
+    initialise_gl();
+    initialise_pen();
 
     while !window.quit
     {
         process_window_events();
-
-        if input.keys[       27].went_down then window.quit = true;  // Esc
-        if input.keys[      219].went_down then change_size(0.5);    // [
-        if input.keys[      221].went_down then change_size(2.0);    // ]
-        if input.keys[#char "1"].went_down then colour = colours[ 0];
-        if input.keys[#char "2"].went_down then colour = colours[ 1];
-        if input.keys[#char "3"].went_down then colour = colours[ 2];
-        if input.keys[#char "4"].went_down then colour = colours[ 3];
-        if input.keys[#char "5"].went_down then colour = colours[ 4];
-        if input.keys[#char "6"].went_down then colour = colours[ 5];
-        if input.keys[#char "7"].went_down then colour = colours[ 6];
-        if input.keys[#char "8"].went_down then colour = colours[ 7];
-        if input.keys[#char "9"].went_down then colour = colours[ 8];
-        if input.keys[#char "0"].went_down then colour = colours[ 9];
-        if input.keys[#char "E"].went_down then colour = colours[10];
-        if input.keys[17].is_down && input.keys[#char "Z"].went_down then undo();
-        if input.keys[17].is_down && input.keys[#char "N"].went_down then clear();
-
-        if input.pressure > 0
-        {
-            s := get_active_stroke();
-            s.colour = colour;
-            p := array_add(*s.points);
-            p.x = xx input.x;
-            p.y = xx input.y;
-            p.r = input.pressure * size;
-            window.dirty = true;
-        }
-        else
-        {
-            if strokes then strokes[strokes.count-1].alive = false;
-        }
-
-        if window.dirty
-        {
-            memset(window.bitmap.data, 17, window.bitmap.count);
-
-            for s: strokes
-            {
-                draw_circle(s.points[0], s.colour);
-
-                for i: 1..s.points.count-1
-                {
-                    p1 := s.points[i-1];
-                    p2 := s.points[i-0];
-
-                    draw_circle(p2, s.colour);
-                }
-            }
-
-            window.dirty = false;
-            draw();
-        }
-
+        handle_input();
+        draw_one_frame();
         sleep_milliseconds(1);
     }
 }
 
 //
-// Rendering
+// App related
 //
 
-draw_circle :: (p: Point, c: Vector3)
+handle_input :: ()
 {
-    for y: cast(s32)(p.y-p.r)..cast(s32)(p.y+p.r)
+    if input.keys[       27].went_down then window.quit = true;  // Esc
+    if input.keys[      219].went_down then change_size(0.5);    // [
+    if input.keys[      221].went_down then change_size(2.0);    // ]
+    if input.keys[#char "1"].went_down then colour = colours[ 0];
+    if input.keys[#char "2"].went_down then colour = colours[ 1];
+    if input.keys[#char "3"].went_down then colour = colours[ 2];
+    if input.keys[#char "4"].went_down then colour = colours[ 3];
+    if input.keys[#char "5"].went_down then colour = colours[ 4];
+    if input.keys[#char "6"].went_down then colour = colours[ 5];
+    if input.keys[#char "7"].went_down then colour = colours[ 6];
+    if input.keys[#char "8"].went_down then colour = colours[ 7];
+    if input.keys[#char "9"].went_down then colour = colours[ 8];
+    if input.keys[#char "0"].went_down then colour = colours[ 9];
+    if input.keys[#char "E"].went_down then colour = colours[10];
+    if input.keys[17].is_down && input.keys[#char "Z"].went_down then undo();
+    if input.keys[17].is_down && input.keys[#char "N"].went_down then clear();
+
+    if input.pressure > 0
     {
-        for x: cast(s32)(p.x-p.r)..cast(s32)(p.x+p.r)
-        {
-            if (x-p.x)*(x-p.x) + (y-p.y)*(y-p.y) < p.r*p.r
-            {
-                fill(x, y, c);
-            }
-        }
+        s := get_active_stroke();
+        s.colour = colour;
+        p := array_add(*s.points);
+        p.x = xx input.x;
+        p.y = xx input.y;
+        p.r = input.pressure * size;
+        window.dirty = true;
+    }
+    else
+    {
+        if strokes then strokes[strokes.count-1].alive = false;
     }
 }
-
-fill :: (x: s32, y: s32, c: Vector3)
-{
-    if x < 0 return;
-    if y < 0 return;
-    if x >= window.width return;
-    if y >= window.height return;
-    index := (y * window.height + x) * 4;
-    window.bitmap[index + 0] = xx (c.z * 255);
-    window.bitmap[index + 1] = xx (c.y * 255);
-    window.bitmap[index + 2] = xx (c.x * 255);
-}
-
-draw :: ()
-{
-    bmi : BITMAPINFO;
-    bmi.bmiHeader.biSize = size_of(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = window.width;
-    bmi.bmiHeader.biHeight = window.height;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    StretchDIBits(GetDC(window.handle), 0, 0, window.width, window.height, 0, 0, window.width, window.height, window.bitmap.data, *bmi, 0, 0x00CC0020 /* SRCCOPY */);
-}
-
-//
-// Helper procedures
-//
 
 get_active_stroke :: () -> *Stroke
 {
@@ -165,7 +107,6 @@ window : struct {
     quit      : bool;
     dirty    := true;
     last_draw : Apollo_Time;
-    bitmap    : [..]u8;
 }
 
 input : struct {
@@ -192,8 +133,106 @@ colours :: Vector3.[
     .{0.1, 0.9, 0.9}, //  7, shortcut key 8
     .{1.0, 0.0, 0.5}, //  8, shortcut key 9
     .{1.0, 1.0, 0.8}, //  9, shortcut key 0
-    .{.08, .08, .08}, // 10, shortcut key E
+    .{.12, .12, .12}, // 10, shortcut key E
 ];
+
+//
+// GL related
+//
+
+draw_one_frame :: ()
+{
+    if !window.dirty return;
+    
+    glClearColor(colours[colours.count-1].x, colours[colours.count-1].y, colours[colours.count-1].z, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(shader_program);
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    SwapBuffers(GetDC(window.handle));
+
+    window.dirty = false;
+}
+
+initialise_gl :: ()
+{
+    gl_create_context(window.handle);
+
+    major, minor := gl_get_version();
+    print("GL Version: %.%\n", major, minor);
+
+    gl_load(*gl);
+    
+    vbo : u32;
+    glGenBuffers(1, *vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    vertices :: float.[
+        -0.5, -0.5, +0.0,
+        +0.5, -0.5, +0.0,
+        +0.0, +0.5, +0.0,
+    ];
+    glBufferData(GL_ARRAY_BUFFER, size_of(type_of(vertices)), vertices.data, GL_STATIC_DRAW);
+
+    vert_shader := glCreateShader(GL_VERTEX_SHADER);
+    vert_sources :: *u8.[vertex_shader_source.data];
+    glShaderSource(vert_shader, 1, vert_sources.data, null);
+    glCompileShader(vert_shader);
+
+    frag_shader := glCreateShader(GL_FRAGMENT_SHADER);
+    frag_sources :: *u8.[fragment_shader_source.data];
+    glShaderSource(frag_shader, 1, frag_sources.data, null);
+    glCompileShader(frag_shader);
+
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, vert_shader);
+    glAttachShader(shader_program, frag_shader);
+    glLinkProgram(shader_program);
+
+    glUseProgram(shader_program);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * size_of(float), null);
+    glEnableVertexAttribArray(0);
+
+    glGenVertexArrays(1, *vao);
+
+    // ..:: Initialization code (done once (unless your object frequently changes)) :: ..
+    // 1. bind Vertex Array Object
+    glBindVertexArray(vao);
+    // 2. copy our vertices array in a buffer for OpenGL to use
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, size_of(type_of(vertices)), vertices.data, GL_STATIC_DRAW);
+    // 3. then set our vertex attributes pointers
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * size_of(float), null);
+    glEnableVertexAttribArray(0);  
+
+
+    print("%\n", glGetError());
+}
+
+shader_program : u32;
+vao : u32;
+
+vertex_shader_source :: #string SHADER
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+
+    void main()
+    {
+        gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    }
+SHADER
+
+fragment_shader_source :: #string SHADER
+    #version 330 core
+    out vec4 FragColor;
+
+    void main()
+    {
+        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    }
+SHADER
 
 //
 // Win32 window message & input related
@@ -203,7 +242,6 @@ create_window :: (width: s32, height: s32, title: string)
 {
     window.width = width;
     window.height = height;
-    array_resize(*window.bitmap, window.width * window.height * 4);
 
     wc: WNDCLASSEXW;
     wc.lpszClassName = utf8_to_wide(title);
@@ -215,10 +253,11 @@ create_window :: (width: s32, height: s32, title: string)
 
     RegisterClassExW(*wc);
 
-    window.handle = CreateWindowExW(0, 
+    window.handle = CreateWindowExW(0,
                         utf8_to_wide(title),
                         utf8_to_wide(title),
-                        WS_VISIBLE | WS_POPUP,
+                        //WS_VISIBLE | WS_POPUP,
+                        WS_OVERLAPPEDWINDOW,
                         CW_USEDEFAULT, CW_USEDEFAULT,
                         window.width, window.height,
                         null, null, null, null);
@@ -252,9 +291,6 @@ window_proc :: (handle: HWND, message: u32, wParam: WPARAM, lParam: LPARAM) -> s
 
     if message ==
     {
-        case WM_PAINT;
-            draw();
-
         case WM_KEYDOWN; #through;
         case WM_SYSKEYDOWN;
             input.keys[wParam].is_down = true;
@@ -298,7 +334,7 @@ window_proc :: (handle: HWND, message: u32, wParam: WPARAM, lParam: LPARAM) -> s
 // WinTab related
 //
 
-init_pen :: () -> bool
+initialise_pen :: () -> bool
 {
     // Load the dll
     dll := LoadLibraryA("Wintab32.dll");
@@ -389,6 +425,7 @@ Log_Context :: struct {
 // Imports
 //
 
+#import "GL";
 #import "Math";
 #import "Basic";
 #import "Windows";
