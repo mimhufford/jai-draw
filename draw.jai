@@ -192,9 +192,6 @@ initialise_gl :: ()
 
     glUseProgram(shader_program);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * size_of(float), null);
-    glEnableVertexAttribArray(0);
-
     glGenVertexArrays(1, *vao);
 
     // ..:: Initialization code (done once (unless your object frequently changes)) :: ..
@@ -291,6 +288,9 @@ window_proc :: (handle: HWND, message: u32, wParam: WPARAM, lParam: LPARAM) -> s
 
     if message ==
     {
+        case WM_PAINT;
+            window.dirty = true;
+
         case WM_KEYDOWN; #through;
         case WM_SYSKEYDOWN;
             input.keys[wParam].is_down = true;
